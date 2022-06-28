@@ -34,81 +34,37 @@ os.makedirs(output_dirname, exist_ok=True)
 features = {}             # dictionary containing extracted data
 activation_cnt_limit = 5  # the number of intermidiate activation to save
 
-# Define specific action while extracting data
-# @torch.fx.wrap
-# def save_output(name, idx, output):
-#     # Extract output data
-#     print(f"extracting {name}_output{idx}")
-#     features[f"{name}_output{idx}"] = output
-#
-# def make_hook(name):
-#     def extract_output(model, model_input, model_output):
-#         # Calculate activation count
-#         activation_cnt = 1
-#         while f"{name}_output{activation_cnt}" in features: activation_cnt += 1
-#         if activation_cnt > activation_cnt_limit: return
-#         model_output.detach()
-#         return save_output(name, idx=activation_cnt, output=model_output)
-#     return extract_output
-#
-# Define layers to extract output
-# hooks = list()
-# hooks.append(target_model.layer1.register_forward_hook(make_hook(f'{output_modelname}_layer1')))
-# hooks.append(target_model.layer2.register_forward_hook(make_hook(f'{output_modelname}_layer2')))
-# hooks.append(target_model.layer3.register_forward_hook(make_hook(f'{output_modelname}_layer3')))
-# hooks.append(target_model.layer4.register_forward_hook(make_hook(f'{output_modelname}_layer4')))
-# target_model.recompile()
-
 class OutputExtractor(fx.Interpreter):
     def __init__(self, gm):
         super(OutputExtractor, self).__init__(gm)
         self.traces = []
 
     def call_module(self, target, *args, **kwargs):
-        if target in self.traces:
-            idx = 0
-            save_output_name = f"{target}_output{idx}"
-            if save_output_name in features:
-                idx += 1
+        for kw in self.traces:
+            if kw in target.split('.'):
+                idx = 0
                 save_output_name = f"{target}_output{idx}"
+                if save_output_name in features:
+                    idx += 1
+                    save_output_name = f"{target}_output{idx}"
 
-            print(f'extracting {save_output_name}')
-            features[save_output_name] = super().call_module(target, *args, **kwargs)
+                print(f'extracting {save_output_name}')
+                features[save_output_name] = super().call_module(target, *args, **kwargs)
         return super().call_module(target, *args, **kwargs)
 
 # Forward propagation by using test dataset provided by modelfile
-# test(test_dataloader, target_model, loss_fn, max_iter=activation_cnt_limit)
 iter_cnt = 0
 max_iter = 5
 device = modelfile.device
 traced = torch.fx.symbolic_trace(target_model)
 
 extractor = OutputExtractor(target_model)
-extractor.traces.append('layer1.0.conv3')
-extractor.traces.append('layer1.1.conv3')
-extractor.traces.append('layer1.2.conv3')
-
-extractor.traces.append('layer2.0.conv3')
-extractor.traces.append('layer2.1.conv3')
-extractor.traces.append('layer2.2.conv3')
-extractor.traces.append('layer2.3.conv3')
-
-extractor.traces.append('layer3.0.conv3')
-extractor.traces.append('layer3.1.conv3')
-extractor.traces.append('layer3.2.conv3')
-extractor.traces.append('layer3.3.conv3')
-extractor.traces.append('layer3.4.conv3')
-extractor.traces.append('layer3.5.conv3')
-
-extractor.traces.append('layer4.0.conv3')
-extractor.traces.append('layer4.1.conv3')
-extractor.traces.append('layer4.2.conv3')
+extractor.traces.append('conv')
+extractor.traces.append('fc')
 
 for X, y in test_dataloader:
-    if iter_cnt > max_iter:
-        break
-    else:
-        iter_cnt += 1
+    if iter_cnt > max_iter: break
+    else: iter_cnt += 1
     X, y = X.to(device), y.to(device)
     extractor.run(X)
     print(f'extraction iter: {iter_cnt}')
@@ -128,8 +84,5 @@ print(f"\n{len(features)} data extracted!")
 # Saving extracted data
 for layer_name in features.keys():
     torch.save(features[layer_name], os.path.join(output_dirname, f"{layer_name}"))
-
-# for hook_handle in hooks:
-#     hook_handle.remove()
 
 target_model.graph.print_tabular()

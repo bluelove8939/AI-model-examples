@@ -37,35 +37,6 @@ Required interfaces
     test_dataloader: test dataset loader
 '''
 
-# Setup for dataset
-# dataset_name = "ImageNet"
-# dataset_dirpath = os.path.join('D:', os.sep, 'datasets', 'imagenet_val')
-# target_dataset = datasets.ImageNet  # target dataset
-# train_batch_size = 128  # batch size (for further testing of the model)
-# test_batch_size = 64    # batch size (for further testing of the model)
-#
-#
-# # train_transforms = transforms.Compose([transforms.Resize((128, 128)),
-# #                                        transforms.ToTensor(),])
-# # test_transforms = transforms.Compose([transforms.Resize((128, 128)),
-# #                                       transforms.ToTensor(),])
-#
-# # Download train data
-# training_data = target_dataset(
-#     root=dataset_dirpath,  # path to download the data
-#     split='val',
-#     download=True,  # download the data if not available at root
-#     transform=ToTensor(),  # transforms feature to tensor
-# )
-#
-# # Download test data
-# test_data = target_dataset(
-#     root=dataset_dirpath,
-#     split='val',
-#     download=True,
-#     transform=ToTensor(),
-# )
-
 dataset_name = "STL10"
 target_dataset = datasets.STL10  # target dataset
 train_batch_size = 128  # batch size (for further testing of the model)
@@ -195,7 +166,7 @@ def test(dataloader, model, loss_fn, max_iter=None):
 #     print("Optimization completed")
 
 
-prune_amount = 0.3  # pruning amount
+prune_amount = 0.7  # pruning amount
 
 def prune_layer(layer_module, max_sublayer_idx):
     prune.l1_unstructured(layer_module[0].downsample[0], 'weight', amount=prune_amount)
@@ -228,6 +199,16 @@ if __name__ == '__main__':
     prune.remove(model.fc, 'bias')
 
     print("pruning completed")
+
+# isinstance
+# eval, exec
+# _modules[]
+#
+# def prune_all_layers(module: torch.nn.Module, prune_amount):
+#     for sub_module in module._modules:
+#         if isinstance(sub_module, torch.nn.Module):
+#             prune_all_layers(sub_module, prune_amount)
+
 
 
 quant_type = 'static'
