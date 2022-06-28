@@ -250,7 +250,7 @@ Note
     This source code saves model with 2) by default
 '''
 
-model_name = f"{model_type}_{dataset_name}_{quant_type}_{prune_amount*100}.pth"
+model_name = f"{model_type}_{dataset_name}_{quant_type}_{int(prune_amount*100)}.pth"
 model_path = os.path.join(os.curdir, 'torch_models')
 
 if __name__ == '__main__':
