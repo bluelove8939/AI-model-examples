@@ -85,4 +85,7 @@ print(f"\n{len(features)} data extracted!")
 for layer_name in features.keys():
     torch.save(features[layer_name], os.path.join(output_dirname, f"{layer_name}"))
 
+with open(os.path.join(output_dirname, 'filelist.txt'), 'wt') as filelist:
+    filelist.write('\n'.join([os.path.join(output_dirname, layer_name) for layer_name in features.keys()]))
+
 target_model.graph.print_tabular()
