@@ -43,10 +43,10 @@ class OutputExtractor(fx.Interpreter):
         for kw in self.traces:
             if kw in target.split('.'):
                 idx = 0
-                save_output_name = f"{target}_output{idx}"
+                save_output_name = f"{output_modelname}_{target}_output{idx}"
                 if save_output_name in features:
                     idx += 1
-                    save_output_name = f"{target}_output{idx}"
+                    save_output_name = f"{output_modelname}_{target}_output{idx}"
 
                 print(f'extracting {save_output_name}')
                 features[save_output_name] = super().call_module(target, *args, **kwargs)
