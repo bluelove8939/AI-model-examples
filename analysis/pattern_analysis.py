@@ -16,7 +16,6 @@ width = width_max / len(values.keys())
 x_axis = np.arange(len(categories))
 
 for idx, (key, val) in enumerate(values.items()):
-    print((idx - (len(values.keys()) / 2)))
     plt.bar(x_axis + ((idx - (len(values.keys()) / 2) + 0.5) * width), original_size / np.array(val), width=width, label=key)
 
 plt.xticks(x_axis, categories)
