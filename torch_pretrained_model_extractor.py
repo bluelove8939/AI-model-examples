@@ -1,9 +1,17 @@
 import os
+import argparse
+
 import torch
 import torch.fx as fx
 import torch.quantization.quantize_fx as quantize_fx
 
 import torch_pretrained_model_loader as modelfile
+
+
+# Parsing the commandline arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('--prune', type=float, default=0.3)
+args = parser.parse_args()
 
 
 model_path = modelfile.model_path  # path toward saved target model
@@ -26,7 +34,7 @@ model_quantized = quantize_fx.convert_fx(model_prepared)      # convert the mode
 model_quantized.load_state_dict(torch.load(os.path.join(model_path, model_name)))  # load save state_dict
 
 target_model = model_quantized
-prune_amount = modelfile.prune_amount  # pruning amount
+prune_amount = args.prune  # pruning amount
 output_modelname = model_name  # model name for output data
 output_dirname = os.path.join(os.curdir, "torch_model_outputs", output_modelname)  # path toward saved data
 os.makedirs(output_dirname, exist_ok=True)
@@ -60,6 +68,11 @@ traced = torch.fx.symbolic_trace(target_model)
 
 extractor = OutputExtractor(target_model)
 extractor.traces.append('conv')
+extractor.traces.append('conv1')
+extractor.traces.append('conv2')
+extractor.traces.append('conv3')
+extractor.traces.append('conv4')
+extractor.traces.append('conv5')
 extractor.traces.append('fc')
 
 for X, y in test_dataloader:

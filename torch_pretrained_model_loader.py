@@ -1,4 +1,5 @@
 import os
+import argparse
 
 import numpy as np
 
@@ -25,6 +26,11 @@ warnings.filterwarnings(
     action='default',
     module=r'torch.quantization'
 )
+
+# Parsing the commandline arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('--prune', type=float, default=0.3)
+args = parser.parse_args()
 
 
 '''
@@ -166,7 +172,7 @@ def test(dataloader, model, loss_fn, max_iter=None):
 #     print("Optimization completed")
 
 
-prune_amount = 0.7  # pruning amount
+prune_amount = args.prune  # pruning amount
 
 def prune_layer(layer_module, max_sublayer_idx):
     prune.l1_unstructured(layer_module[0].downsample[0], 'weight', amount=prune_amount)
