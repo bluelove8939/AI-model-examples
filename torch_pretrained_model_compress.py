@@ -76,34 +76,37 @@ NetworkModel = modelfile.NetworkModel
 # Generate model for fine tuning
 model = modelfile.model
 
-
 prune_amount = args.prune  # pruning amount
 
 def prune_all_layers(module: torch.nn.Module, prune_amount):
     for sub_idx, sub_module in module._modules.items():
-        if isinstance(sub_module, torch.nn.Module):
+        if isinstance(sub_module, torch.nn.Conv2d):
+            # print(sub_idx, 'conv2d')
+            prune.l1_unstructured(sub_module, 'weight', amount=prune_amount)
+            prune.remove(sub_module, 'weight')
+        elif isinstance(sub_module, torch.nn.Linear):
+            # print(sub_idx, 'linear')
+            prune.l1_unstructured(sub_module, 'weight', amount=prune_amount)
+            prune.l1_unstructured(sub_module, 'bias', amount=prune_amount)
+            prune.remove(sub_module, 'weight')
+            prune.remove(sub_module, 'bias')
+        elif isinstance(sub_module, torch.nn.Module):
             # print(f"Entering layer[{sub_idx}]: {sub_module._get_name()}")
             prune_all_layers(sub_module, prune_amount)
-        else:
-            if hasattr(sub_module, 'weight'):
-                prune.l1_unstructured(sub_module, 'weight', amount=prune_amount)
-                prune.remove(sub_module, 'weight')
-            if hasattr(sub_module, 'bias'):
-                prune.l1_unstructured(sub_module, 'bias', amount=prune_amount)
-                prune.remove(sub_module, 'bias')
 
 if __name__ == '__main__':
     iter_amount = 10
-    iter_cnt = math.ceil(prune_amount * 10)
+    tune_batch_num = 10
+    iter_cnt = math.ceil(prune_amount * 100 / iter_amount)
 
     for iter_idx in range(iter_cnt):
         print(f"pruning iter: {iter_idx:2d}/{iter_cnt:2d}", end='')
         prune_all_layers(model, prune_amount=iter_amount)
-        print('  training...')
+        print(f'  fine tuning with {tune_batch_num} batches')
         modelfile.train(train_dataloader, model,
                         loss_fn=modelfile.loss_fn,
                         optimizer=modelfile.optimizer,
-                        max_iter=10,
+                        max_iter=tune_batch_num,
                         verbose=True)
 
 print("\npruning completed")
