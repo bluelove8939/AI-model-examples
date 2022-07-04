@@ -5,7 +5,7 @@ import torch
 import torch.fx as fx
 import torch.quantization.quantize_fx as quantize_fx
 
-import torch_pretrained_model_loader as modelfile
+import torch_pretrained_model_compress as compressed_modelfile
 
 
 # Parsing the commandline arguments
@@ -14,28 +14,26 @@ parser.add_argument('--prune', type=float, default=0.3)
 args = parser.parse_args()
 
 
-model_path = modelfile.model_path  # path toward saved target model
-model_name = modelfile.model_name  # target model name
+model_path = compressed_modelfile.model_path  # path toward saved target model
+model_name = compressed_modelfile.model_name  # target model name
 
-test_dataloader = modelfile.test_dataloader  # test dataset
-test = modelfile.test                        # test function
-loss_fn = modelfile.loss_fn                  # loss function
+test_dataloader = compressed_modelfile.test_dataloader  # test dataset
+test = compressed_modelfile.modelfile.test        # test function
+loss_fn = compressed_modelfile.modelfile.loss_fn  # loss function
 
-model = modelfile.NetworkModel()  # generate model of modelfile
-# model.load_state_dict(torch.load(os.path.join(model_path, model_name)))  # load save state_dict
-quant_type = modelfile.quant_type
-model.eval()                 # set model into evaluation mode
-qconfig = modelfile.qconfig
-qconfig_dict = {"": qconfig} # generate Qconfig
+model = compressed_modelfile.NetworkModel()    # generate model of modelfile
+quant_type = compressed_modelfile.quant_type
+model.eval()                                   # set model into evaluation mode
+qconfig = compressed_modelfile.qconfig
+qconfig_dict = {"": qconfig}                   # generate Qconfig
 
-model_prepared = quantize_fx.prepare_fx(model, qconfig_dict)  # preparation
-# calibrate(model_prepared, test_dataloader)                    # calibration
-model_quantized = quantize_fx.convert_fx(model_prepared)      # convert the model
+model_prepared = quantize_fx.prepare_fx(model, qconfig_dict)                       # preparation
+model_quantized = quantize_fx.convert_fx(model_prepared)                           # convert the model
 model_quantized.load_state_dict(torch.load(os.path.join(model_path, model_name)))  # load save state_dict
 
 target_model = model_quantized
-prune_amount = args.prune  # pruning amount
-output_modelname = model_name  # model name for output data
+prune_amount = args.prune                                                          # pruning amount
+output_modelname = model_name                                                      # model name for output data
 output_dirname = os.path.join(os.curdir, "torch_model_outputs", output_modelname)  # path toward saved data
 os.makedirs(output_dirname, exist_ok=True)
 
@@ -60,10 +58,10 @@ class OutputExtractor(fx.Interpreter):
                 features[save_output_name] = super().call_module(target, *args, **kwargs)
         return super().call_module(target, *args, **kwargs)
 
-# Forward propagation by using test dataset provided by modelfile
+# Forward propagation by using test dataset provided by compressed_modelfile
 iter_cnt = 0
 max_iter = 5
-device = modelfile.device
+device = compressed_modelfile.device
 traced = torch.fx.symbolic_trace(target_model)
 
 extractor = OutputExtractor(target_model)
